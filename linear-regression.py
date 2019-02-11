@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[101]:
+# In[397]:
 
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
-# In[237]:
+# In[402]:
 
 
 # PART A
@@ -33,7 +34,7 @@ x_i = np.array([[xi, 1] for xi in x_i_norm])
 # print (x_i_norm)
 
 
-# In[238]:
+# In[403]:
 
 
 # Detect Convergence
@@ -45,24 +46,45 @@ def converged(theta_next, theta):
     return converged
 
 
-# In[239]:
+# In[404]:
 
 
 # Gradient Descent
 num_iterations = 0
-total_iterations = 10000
+total_iterations = 10
+
+theta_0 = np.array([])
+theta_1 = np.array([])
+error_func = np.array([])
+
 while(True):
     theta_next = np.array([0.00, 0.00])
+    j_theta = 0
     for j in range(theta.size):
         sum = 0
         for i in range(m):
             hyp = np.dot(theta, x_i[i])
             sum = sum + x_i[i][j]*(y_i[i] - hyp)
+            j_theta = j_theta + (y_i[i] - hyp)*(y_i[i] - hyp)
         theta_next[j] = theta[j] + n*sum/m
         
     if (converged(theta_next, theta)):
         break
         
+    # Plot J(theta) vs theta for PART C
+    j_theta = j_theta/(4*m)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    theta_0 = np.append(theta_0, theta[0])
+    theta_1 = np.append(theta_1, theta[1])
+    error_func = np.append(error_func, j_theta)
+    
+    ax.plot(theta_0, theta_1, error_func)
+    plt.show(block=False)
+    plt.pause(0.2)
+    plt.close()
+    
     theta = theta_next
     num_iterations += 1
     
@@ -70,7 +92,7 @@ print (theta)
 print (num_iterations)
 
 
-# In[240]:
+# In[270]:
 
 
 # PART B
