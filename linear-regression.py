@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[208]:
+# In[24]:
 
 
 import numpy as np
@@ -9,9 +9,10 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
 from matplotlib import cm
+import math
 
 
-# In[209]:
+# In[25]:
 
 
 # PART A
@@ -31,11 +32,11 @@ mean = mean/m
 e_x_squared = squared_sum/m
 variance = e_x_squared - mean*mean
 
-x_i_norm = np.array([(xi-mean)/variance for xi in x_i_raw])
+x_i_norm = np.array([(xi-mean)/math.sqrt(variance) for xi in x_i_raw])
 x_i = np.array([[1, xi] for xi in x_i_norm])
 
 
-# In[210]:
+# In[26]:
 
 
 # Detect Convergence
@@ -62,7 +63,7 @@ def compute_error(theta_0, theta_1):
     return error
 
 
-# In[211]:
+# In[27]:
 
 
 # Gradient Descent
@@ -99,16 +100,16 @@ print (theta)
 print (num_iterations)
 
 
-# In[212]:
+# In[28]:
 
 
-# Plot Graphs
+# Plot Graphs for PART B
 h_theta = np.array([np.dot(theta, xi) for xi in x_i])
 plt.plot(x_i_raw, y_i, 'ro')
 plt.plot(x_i_raw, h_theta, 'b-')
 
 
-# In[213]:
+# In[29]:
 
 
 fig = plt.figure()
@@ -116,9 +117,9 @@ ax = p3.Axes3D(fig)
 
 # Plot for PART C
 # Set Axes Properties
-theta_0_min, theta_0_max = -0.5, 2.5
-theta_1_min, theta_1_max = -1.5, 1.5
-error_func_min, error_func_max = 0, 3
+theta_0_min, theta_0_max = -1, 3
+theta_1_min, theta_1_max = -2, 2
+error_func_min, error_func_max = 0, 4
 ax.set_xlim3d([theta_0_min, theta_0_max])
 ax.set_ylim3d([theta_1_min, theta_1_max])
 ax.set_zlim3d([error_func_min, error_func_max])
@@ -141,9 +142,10 @@ ani = animation.FuncAnimation(fig, update_lines, num_iterations-1, fargs=(curve,
 plt.show()
 
 
-# In[214]:
+# In[30]:
 
 
+# Plot contour for PART D
 plt.ion()
 contour_plot = plt.plot([], [], 'r.')[0]
 plt.contour(theta_0_surface, theta_1_surface, error_func_surface)
