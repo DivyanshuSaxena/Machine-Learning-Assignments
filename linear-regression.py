@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[397]:
+# In[96]:
 
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import mpl_toolkits.mplot3d.axes3d as p3
+import matplotlib.animation as animation
 
 
-# In[402]:
+# In[97]:
 
 
 # PART A
@@ -34,7 +35,7 @@ x_i = np.array([[xi, 1] for xi in x_i_norm])
 # print (x_i_norm)
 
 
-# In[403]:
+# In[98]:
 
 
 # Detect Convergence
@@ -45,17 +46,26 @@ def converged(theta_next, theta):
         converged = converged and abs(theta_next[d] - theta[d]) < epsilon
     return converged
 
+# Update Graph for PART C
+def update_lines(num, dataLines, lines):
+    for line, data in zip(lines, dataLines):
+        line.set_data(data[0:2, :num])
+        line.set_3d_properties(data[2, :num])
+    return lines
 
-# In[404]:
+
+# In[99]:
 
 
 # Gradient Descent
 num_iterations = 0
 total_iterations = 10
 
-theta_0 = np.array([])
-theta_1 = np.array([])
-error_func = np.array([])
+theta_0, theta_1, error_func = [], [], []
+curve = []
+
+fig = plt.figure()
+ax = p3.Axes3D(fig)
 
 while(True):
     theta_next = np.array([0.00, 0.00])
@@ -71,28 +81,33 @@ while(True):
     if (converged(theta_next, theta)):
         break
         
-    # Plot J(theta) vs theta for PART C
     j_theta = j_theta/(4*m)
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    theta_0 = np.append(theta_0, theta[0])
-    theta_1 = np.append(theta_1, theta[1])
-    error_func = np.append(error_func, j_theta)
-    
-    ax.plot(theta_0, theta_1, error_func)
-    plt.show(block=False)
-    plt.pause(0.2)
-    plt.close()
+    theta_0.append(theta[0])
+    theta_1.append(theta[1])
+    error_func.append(j_theta)
     
     theta = theta_next
     num_iterations += 1
     
+# Set Axes Properties
+theta_0_min, theta_0_max = 0.8*min(theta_0), 1.2*max(theta_0)
+theta_1_min, theta_1_max = 0.8*min(theta_1), 1.2*max(theta_1)
+error_func_min, error_func_max = 0.8*min(error_func), 1.2*max(error_func)
+ax.set_xlim3d([theta_0_min, theta_0_max])
+ax.set_ylim3d([theta_1_min, theta_1_max])
+ax.set_zlim3d([error_func_min, error_func_max])
+
+# Plot error curve versus parameters
+curve = [np.array([theta_0, theta_1, error_func])]
+lines = [ax.plot(dat[0, 0:1], dat[1, 0:1], dat[2, 0:1])[0] for dat in curve]
+ani = animation.FuncAnimation(fig, update_lines, num_iterations-1, fargs=(curve, lines), interval=200, blit=True)
+plt.show()
+
 print (theta)
 print (num_iterations)
 
 
-# In[270]:
+# In[100]:
 
 
 # PART B
