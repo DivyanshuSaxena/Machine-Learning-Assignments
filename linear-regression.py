@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[96]:
+# In[152]:
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
+from matplotlib import cm
 
 
-# In[97]:
+# In[158]:
 
 
 # PART A
@@ -18,7 +19,7 @@ x_i_raw = np.genfromtxt('./ass1_data/linearX.csv', delimiter=',')
 y_i = np.genfromtxt('./ass1_data/linearY.csv', delimiter=',')
 theta = np.array([0.00, 0.00])
 m = x_i_raw.size
-n = 1.95
+n = 0.5
 
 # Normalize data
 mean = 0
@@ -31,11 +32,10 @@ e_x_squared = squared_sum/m
 variance = e_x_squared - mean*mean
 
 x_i_norm = np.array([(xi-mean)/variance for xi in x_i_raw])
-x_i = np.array([[xi, 1] for xi in x_i_norm])
-# print (x_i_norm)
+x_i = np.array([[1, xi] for xi in x_i_norm])
 
 
-# In[98]:
+# In[159]:
 
 
 # Detect Convergence
@@ -53,8 +53,16 @@ def update_lines(num, dataLines, lines):
         line.set_3d_properties(data[2, :num])
     return lines
 
+def compute_error(theta_0, theta_1):
+    error = 0
+    for i in range(m):
+        hyp = theta_1*x_i[i][1] + theta_0
+        error += (y_i[i]-hyp)*(y_i[i]-hyp)
+    error = error/(2*m)
+    return error
 
-# In[99]:
+
+# In[160]:
 
 
 # Gradient Descent
@@ -89,28 +97,43 @@ while(True):
     theta = theta_next
     num_iterations += 1
     
-# Set Axes Properties
-theta_0_min, theta_0_max = 0.8*min(theta_0), 1.2*max(theta_0)
-theta_1_min, theta_1_max = 0.8*min(theta_1), 1.2*max(theta_1)
-error_func_min, error_func_max = 0.8*min(error_func), 1.2*max(error_func)
-ax.set_xlim3d([theta_0_min, theta_0_max])
-ax.set_ylim3d([theta_1_min, theta_1_max])
-ax.set_zlim3d([error_func_min, error_func_max])
-
-# Plot error curve versus parameters
-curve = [np.array([theta_0, theta_1, error_func])]
-lines = [ax.plot(dat[0, 0:1], dat[1, 0:1], dat[2, 0:1])[0] for dat in curve]
-ani = animation.FuncAnimation(fig, update_lines, num_iterations-1, fargs=(curve, lines), interval=200, blit=True)
-plt.show()
-
 print (theta)
 print (num_iterations)
 
 
-# In[100]:
+# In[161]:
 
 
-# PART B
+# Plot for PART C
+# Set Axes Properties
+theta_0_min, theta_0_max = -0.5, 2.5
+theta_1_min, theta_1_max = -1.5, 1.5
+error_func_min, error_func_max = 0, 3
+ax.set_xlim3d([theta_0_min, theta_0_max])
+ax.set_ylim3d([theta_1_min, theta_1_max])
+ax.set_zlim3d([error_func_min, error_func_max])
+
+# Make surface plot
+theta_0_surface = np.linspace(theta_0_min, theta_0_max, 300)
+theta_1_surface = np.linspace(theta_1_min, theta_1_max, 300)
+theta_0_surface, theta_1_surface = np.meshgrid(theta_0_surface, theta_1_surface)    
+error_func_surface = compute_error(theta_0_surface, theta_1_surface)
+
+# Plot the error function surface
+ax.plot_surface(theta_0_surface, theta_1_surface, error_func_surface, cmap = cm.coolwarm, 
+                linewidth=0, antialiased=False)
+
+# Plot error curve versus parameters
+curve = [np.array([theta_0, theta_1, error_func])]
+lines = [ax.plot(dat[0, 0:1], dat[1, 0:1], dat[2, 0:1], 'r.')[0] for dat in curve]
+ani = animation.FuncAnimation(fig, update_lines, num_iterations-1, fargs=(curve, lines), 
+                              interval=200, blit=True)
+plt.show()
+
+
+# In[162]:
+
+
 # Plot Graphs
 h_theta = np.array([np.dot(theta, xi) for xi in x_i])
 plt.plot(x_i_raw, y_i, 'ro')
