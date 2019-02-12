@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[152]:
+# In[208]:
 
 
 import numpy as np
@@ -11,7 +11,7 @@ import matplotlib.animation as animation
 from matplotlib import cm
 
 
-# In[158]:
+# In[209]:
 
 
 # PART A
@@ -35,7 +35,7 @@ x_i_norm = np.array([(xi-mean)/variance for xi in x_i_raw])
 x_i = np.array([[1, xi] for xi in x_i_norm])
 
 
-# In[159]:
+# In[210]:
 
 
 # Detect Convergence
@@ -62,18 +62,16 @@ def compute_error(theta_0, theta_1):
     return error
 
 
-# In[160]:
+# In[211]:
 
 
 # Gradient Descent
 num_iterations = 0
 total_iterations = 10
 
+# Arrays ti hold parameter values for all iterations
 theta_0, theta_1, error_func = [], [], []
 curve = []
-
-fig = plt.figure()
-ax = p3.Axes3D(fig)
 
 while(True):
     theta_next = np.array([0.00, 0.00])
@@ -101,8 +99,20 @@ print (theta)
 print (num_iterations)
 
 
-# In[161]:
+# In[212]:
 
+
+# Plot Graphs
+h_theta = np.array([np.dot(theta, xi) for xi in x_i])
+plt.plot(x_i_raw, y_i, 'ro')
+plt.plot(x_i_raw, h_theta, 'b-')
+
+
+# In[213]:
+
+
+fig = plt.figure()
+ax = p3.Axes3D(fig)
 
 # Plot for PART C
 # Set Axes Properties
@@ -131,13 +141,19 @@ ani = animation.FuncAnimation(fig, update_lines, num_iterations-1, fargs=(curve,
 plt.show()
 
 
-# In[162]:
+# In[214]:
 
 
-# Plot Graphs
-h_theta = np.array([np.dot(theta, xi) for xi in x_i])
-plt.plot(x_i_raw, y_i, 'ro')
-plt.plot(x_i_raw, h_theta, 'b-')
+plt.ion()
+contour_plot = plt.plot([], [], 'r.')[0]
+plt.contour(theta_0_surface, theta_1_surface, error_func_surface)
+
+for i in range(num_iterations-1):
+    contour_plot.set_xdata(theta_0[:i])
+    contour_plot.set_ydata(theta_1[:i])
+    plt.pause(0.2)
+    
+plt.show()
 
 
 # In[ ]:
