@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[51]:
+# In[59]:
 
 
 import numpy as np
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import math
 
 
-# In[52]:
+# In[64]:
 
 
 # Read data from files
@@ -17,7 +17,7 @@ x_i_raw = np.genfromtxt('./ass1_data/weightedX.csv', delimiter=',')
 y_i = np.genfromtxt('./ass1_data/weightedY.csv', delimiter=',')
 theta = np.array([0.00, 0.00])
 m = x_i_raw.size
-n = 0.5
+n = 1.5
 
 # Normalize data
 mean = 0
@@ -34,7 +34,7 @@ x_i_norm = np.array([(xi-mean)/variance for xi in x_i_raw])
 x_i = np.array([[1, xi] for xi in x_i_norm])
 
 
-# In[53]:
+# In[65]:
 
 
 # Detect Convergence
@@ -46,7 +46,7 @@ def converged(theta_next, theta):
     return converged
 
 
-# In[54]:
+# In[66]:
 
 
 # Gradient Descent
@@ -83,7 +83,7 @@ print (theta)
 print (num_iterations)
 
 
-# In[55]:
+# In[67]:
 
 
 # Plot Graphs for PART A - Unweighted Linear Regression
@@ -92,7 +92,7 @@ plt.plot(x_i_raw, y_i, 'ro')
 plt.plot(x_i_raw, h_theta, 'b-')
 
 
-# In[56]:
+# In[68]:
 
 
 # Function to give the predictions for the entire data set using locally weighted regression
@@ -118,7 +118,7 @@ def locally_weighted_plot(tau):
     return (x_i_unnorm[:, [1]], prediction)
 
 
-# In[57]:
+# In[69]:
 
 
 # Plot for PART B
@@ -126,7 +126,7 @@ tuple_1 = locally_weighted_plot(0.8)
 plt.plot(tuple_1[0], tuple_1[1], 'bo')
 
 
-# In[58]:
+# In[70]:
 
 
 # Plot graphs for PART C

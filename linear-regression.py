@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[24]:
+# In[31]:
 
 
 import numpy as np
@@ -12,7 +12,7 @@ from matplotlib import cm
 import math
 
 
-# In[25]:
+# In[32]:
 
 
 # PART A
@@ -20,7 +20,7 @@ x_i_raw = np.genfromtxt('./ass1_data/linearX.csv', delimiter=',')
 y_i = np.genfromtxt('./ass1_data/linearY.csv', delimiter=',')
 theta = np.array([0.00, 0.00])
 m = x_i_raw.size
-n = 0.5
+n = 1.5
 
 # Normalize data
 mean = 0
@@ -36,7 +36,7 @@ x_i_norm = np.array([(xi-mean)/math.sqrt(variance) for xi in x_i_raw])
 x_i = np.array([[1, xi] for xi in x_i_norm])
 
 
-# In[26]:
+# In[33]:
 
 
 # Detect Convergence
@@ -63,7 +63,7 @@ def compute_error(theta_0, theta_1):
     return error
 
 
-# In[27]:
+# In[34]:
 
 
 # Gradient Descent
@@ -100,7 +100,7 @@ print (theta)
 print (num_iterations)
 
 
-# In[28]:
+# In[35]:
 
 
 # Plot Graphs for PART B
@@ -109,7 +109,7 @@ plt.plot(x_i_raw, y_i, 'ro')
 plt.plot(x_i_raw, h_theta, 'b-')
 
 
-# In[29]:
+# In[36]:
 
 
 fig = plt.figure()
@@ -142,7 +142,7 @@ ani = animation.FuncAnimation(fig, update_lines, num_iterations-1, fargs=(curve,
 plt.show()
 
 
-# In[30]:
+# In[37]:
 
 
 # Plot contour for PART D
