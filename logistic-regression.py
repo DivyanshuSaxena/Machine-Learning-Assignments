@@ -1,23 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[149]:
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import sys
 
-
-# In[150]:
 
 
 # Read data from files
-x_i_raw = np.genfromtxt('./ass1_data/logisticX.csv', delimiter=',')
-y_i = np.genfromtxt('./ass1_data/logisticY.csv', delimiter=',')
+x_i_raw = np.genfromtxt(sys.argv[1], delimiter=',')
+y_i = np.genfromtxt(sys.argv[2], delimiter=',')
 theta = np.array([0.00, 0.00, 0.00])
 m = x_i_raw.shape[0]
-n = 1.5
 
 # Normalize data - Both dimensions are normalized separately
 mean1 = 0
@@ -46,7 +43,6 @@ else:
     x_i = np.array([[1, xi1, xi2] for xi1, xi2 in x_i_raw])
 
 
-# In[151]:
 
 
 # Detect Convergence
@@ -58,7 +54,6 @@ def converged(theta_next, theta):
     return converged
 
 
-# In[152]:
 
 
 # Implement Newton's Method for PART A
@@ -87,7 +82,6 @@ print (theta)
 print (num_iterations)
 
 
-# In[153]:
 
 
 # Plot the graph of logistic regression for PART B
@@ -121,10 +115,4 @@ else:
     x1 = np.linspace(-3, 3, 100)    
 x2 = -(theta[0] + theta[1]*x1)/theta[2]
 plt.plot(x1, x2, 'g-')
-
-
-# In[ ]:
-
-
-
-
+plt.show()

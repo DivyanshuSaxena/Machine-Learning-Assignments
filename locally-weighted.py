@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[59]:
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import sys
 
-
-# In[64]:
 
 
 # Read data from files
-x_i_raw = np.genfromtxt('./ass1_data/weightedX.csv', delimiter=',')
-y_i = np.genfromtxt('./ass1_data/weightedY.csv', delimiter=',')
+x_i_raw = np.genfromtxt(sys.argv[1], delimiter=',')
+y_i = np.genfromtxt(sys.argv[2], delimiter=',')
 theta = np.array([0.00, 0.00])
 m = x_i_raw.size
 n = 1.5
+tau = float(sys.argv[3])
 
 # Normalize data
 mean = 0
@@ -34,7 +33,6 @@ x_i_norm = np.array([(xi-mean)/variance for xi in x_i_raw])
 x_i = np.array([[1, xi] for xi in x_i_norm])
 
 
-# In[65]:
 
 
 # Detect Convergence
@@ -46,7 +44,6 @@ def converged(theta_next, theta):
     return converged
 
 
-# In[66]:
 
 
 # Gradient Descent
@@ -83,16 +80,15 @@ print (theta)
 print (num_iterations)
 
 
-# In[67]:
 
 
 # Plot Graphs for PART A - Unweighted Linear Regression
 h_theta = np.array([np.dot(theta, xi) for xi in x_i])
 plt.plot(x_i_raw, y_i, 'ro')
 plt.plot(x_i_raw, h_theta, 'b-')
+plt.show()
 
 
-# In[68]:
 
 
 # Function to give the predictions for the entire data set using locally weighted regression
@@ -118,15 +114,15 @@ def locally_weighted_plot(tau):
     return (x_i_unnorm[:, [1]], prediction)
 
 
-# In[69]:
 
 
 # Plot for PART B
-tuple_1 = locally_weighted_plot(0.8)
-plt.plot(tuple_1[0], tuple_1[1], 'bo')
+tuple_1 = locally_weighted_plot(tau)
+plt.plot(x_i_raw, y_i, 'r.')
+plt.plot(tuple_1[0], tuple_1[1], 'b+')
+plt.show()
 
 
-# In[70]:
 
 
 # Plot graphs for PART C
@@ -137,15 +133,12 @@ tuple_4 = locally_weighted_plot(10)
 
 fig, axs = plt.subplots(2, 2, sharex=True, sharey=True)
 axs[0, 0].plot(tuple_1[0], tuple_1[1], 'b.')
+axs[0, 0].set_title('tau = 0.1')
 axs[0, 1].plot(tuple_2[0], tuple_2[1], 'r.')
+axs[0, 1].set_title('tau = 0.3')
 axs[1, 0].plot(tuple_3[0], tuple_3[1], 'g.')
+axs[1, 0].set_title('tau = 2')
 axs[1, 1].plot(tuple_4[0], tuple_4[1], 'y.')
+axs[1, 1].set_title('tau = 10')
 
 plt.show()
-
-
-# In[ ]:
-
-
-
-

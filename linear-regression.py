@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[31]:
 
 
 import numpy as np
@@ -10,17 +9,18 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.animation as animation
 from matplotlib import cm
 import math
+import sys
 
 
-# In[32]:
 
 
 # PART A
-x_i_raw = np.genfromtxt('./ass1_data/linearX.csv', delimiter=',')
-y_i = np.genfromtxt('./ass1_data/linearY.csv', delimiter=',')
+x_i_raw = np.genfromtxt(sys.argv[1], delimiter=',')
+y_i = np.genfromtxt(sys.argv[2], delimiter=',')
 theta = np.array([0.00, 0.00])
 m = x_i_raw.size
-n = 1.5
+n = float(sys.argv[3])
+time_gap = float(sys.argv[4])
 
 # Normalize data
 mean = 0
@@ -36,7 +36,6 @@ x_i_norm = np.array([(xi-mean)/math.sqrt(variance) for xi in x_i_raw])
 x_i = np.array([[1, xi] for xi in x_i_norm])
 
 
-# In[33]:
 
 
 # Detect Convergence
@@ -63,7 +62,6 @@ def compute_error(theta_0, theta_1):
     return error
 
 
-# In[34]:
 
 
 # Gradient Descent
@@ -87,6 +85,10 @@ while(True):
         
     if (converged(theta_next, theta)):
         break
+
+    if (theta_next[1] - theta[1] > 1000000):
+        print ('Divergence observed in theta. Exiting...')
+        sys.exit()
         
     j_theta = j_theta/(4*m)
     theta_0.append(theta[0])
@@ -100,7 +102,6 @@ print (theta)
 print (num_iterations)
 
 
-# In[35]:
 
 
 # Plot Graphs for PART B
@@ -109,7 +110,6 @@ plt.plot(x_i_raw, y_i, 'ro')
 plt.plot(x_i_raw, h_theta, 'b-')
 
 
-# In[36]:
 
 
 fig = plt.figure()
@@ -119,7 +119,7 @@ ax = p3.Axes3D(fig)
 # Set Axes Properties
 theta_0_min, theta_0_max = -1, 3
 theta_1_min, theta_1_max = -2, 2
-error_func_min, error_func_max = 0, 4
+error_func_min, error_func_max = 0, 5
 ax.set_xlim3d([theta_0_min, theta_0_max])
 ax.set_ylim3d([theta_1_min, theta_1_max])
 ax.set_zlim3d([error_func_min, error_func_max])
@@ -142,7 +142,6 @@ ani = animation.FuncAnimation(fig, update_lines, num_iterations-1, fargs=(curve,
 plt.show()
 
 
-# In[37]:
 
 
 # Plot contour for PART D
@@ -153,13 +152,6 @@ plt.contour(theta_0_surface, theta_1_surface, error_func_surface)
 for i in range(num_iterations-1):
     contour_plot.set_xdata(theta_0[:i])
     contour_plot.set_ydata(theta_1[:i])
-    plt.pause(0.2)
+    plt.pause(time_gap)
     
 plt.show()
-
-
-# In[ ]:
-
-
-
-

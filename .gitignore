@@ -107,4 +107,7 @@ venv.bak/
 *.zip
 *.csv
 *.dat
+*.pdf
 demo/
+a1_figures/
+2016CS10316_Divyanshu_Saxena/
