@@ -118,8 +118,8 @@ def locally_weighted_plot(tau):
 
 # Plot for PART B
 tuple_1 = locally_weighted_plot(tau)
-plt.plot(x_i_raw, y_i, 'r.')
-plt.plot(tuple_1[0], tuple_1[1], 'b+')
+plt.plot(x_i_raw, y_i, 'r+')
+plt.plot(tuple_1[0], tuple_1[1], 'b.')
 plt.show()
 
 

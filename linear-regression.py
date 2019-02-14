@@ -147,7 +147,8 @@ plt.show()
 # Plot contour for PART D
 plt.ion()
 contour_plot = plt.plot([], [], 'r.')[0]
-plt.contour(theta_0_surface, theta_1_surface, error_func_surface)
+contour = plt.contour(theta_0_surface, theta_1_surface, error_func_surface, [0.04, 0.16, 0.32, 0.64, 1.28, 2.00, 2.56])
+plt.clabel(contour, inline=1, fontsize=10)
 
 for i in range(num_iterations-1):
     contour_plot.set_xdata(theta_0[:i])
