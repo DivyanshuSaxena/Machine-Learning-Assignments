@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[36]:
+# In[93]:
 
 
 import math
@@ -12,37 +12,46 @@ from cvxopt.solvers import qp
 
 # Hyperparameters
 gamma = 0.05
-gaussian = False
+gaussian = True
+digit = 6
 
 
-# In[37]:
+# In[94]:
 
 
 # Get data for PART A
 train_data_raw = np.genfromtxt('./ass2_data/digit_train.csv', delimiter=',')
-test_data = np.genfromtxt('./ass2_data/digit_test.csv', delimiter=',')
+test_data_raw = np.genfromtxt('./ass2_data/digit_test.csv', delimiter=',')
 
 
-# In[38]:
+# In[80]:
 
 
 # Process data to get the relevant vectors
 scale_down = lambda x : x/255
 train_data = np.array([np.zeros(shape=28*28 + 1)])
+test_data = np.array([np.zeros(shape=28*28 + 1)])
 
 for sample in train_data_raw:
-    if sample[-1] == 6 or sample[-1] == 7:
+    if sample[-1] == digit or sample[-1] == digit+1:
         insert_sample = np.array([scale_down(x) for x in sample[:-1]])
         insert_sample = np.append(insert_sample, sample[-1])
         train_data = np.vstack([train_data, insert_sample])
+        
+for sample in test_data_raw:
+    if sample[-1] == digit or sample[-1] == digit+1:
+        insert_sample = np.array([scale_down(x) for x in sample[:-1]])
+        insert_sample = np.append(insert_sample, sample[-1])
+        test_data = np.vstack([test_data, insert_sample])
 
 train_data = train_data[1:]
+test_data = test_data[1:]
 
 
-# In[39]:
+# In[86]:
 
 
-get_class = lambda x : 1 if x == 6 else -1
+get_class = lambda x : 1 if x == digit else -1
 
 # Global Parameters for our model
 # m = 500
@@ -66,10 +75,19 @@ for i in range(m):
 # Get input for the solver
 P = matrix(P)
 q = matrix(1.0, (m,1))
-G = matrix(np.identity(m))
-h = matrix(0.0, (m,1))
+
+G_identity = np.identity(m)
+temp_G = np.concatenate((G_identity, -G_identity), axis=0)
+G = matrix(temp_G, (2*m, m))
+
+h_zero = np.zeros(m)
+h_ones = np.ones(m)
+temp_h = np.append(h_zero, h_ones)
+h = matrix(temp_h, (2*m,1))
+
 temp_A = list(map(get_class, train_data[0:m, -1]))
 A = matrix(np.array(temp_A), (1, m), 'd')
+
 b = matrix(0.0)
 
 # Use the cvxopt solver qp module
@@ -78,7 +96,7 @@ alphas = np.array(-alphas)[:, 0]
 print (alphas)
 
 
-# In[40]:
+# In[90]:
 
 
 # Evaluate w and b
@@ -101,13 +119,14 @@ b = -(maxone + minone)/2
 # print (b)
 
 
-# In[43]:
+# In[92]:
 
 
 # Find accuracy
 accuracy = 0
+test_m = len(test_data)
 
-for sample in train_data[0:m]:
+for sample in test_data[0:test_m]:
     pred_z = np.dot(w.T, sample[:-1]) + b
     if pred_z > 0:
         pred = 1
@@ -116,5 +135,11 @@ for sample in train_data[0:m]:
     if pred == get_class(sample[-1]):
         accuracy += 1
 
-print (accuracy/m * 100)
+print (accuracy/test_m * 100)
+
+
+# In[ ]:
+
+
+
 
