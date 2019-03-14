@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[93]:
+# In[1]:
 
 
 import math
@@ -12,11 +12,11 @@ from cvxopt.solvers import qp
 
 # Hyperparameters
 gamma = 0.05
-gaussian = False
+gaussian = True
 digit = 6
 
 
-# In[94]:
+# In[2]:
 
 
 # Get data for PART A
@@ -24,7 +24,7 @@ train_data_raw = np.genfromtxt('./ass2_data/digit_train.csv', delimiter=',')
 test_data_raw = np.genfromtxt('./ass2_data/digit_test.csv', delimiter=',')
 
 
-# In[80]:
+# In[3]:
 
 
 # Process data to get the relevant vectors
@@ -48,7 +48,7 @@ train_data = train_data[1:]
 test_data = test_data[1:]
 
 
-# In[86]:
+# In[4]:
 
 
 get_class = lambda x : 1 if x == digit else -1
@@ -60,26 +60,29 @@ alphas = np.array([])
 w = np.array([])
 b = 0
 
-P = np.zeros(shape=(m,m))
-for i in range(m):
-    for j in range(m):
-        y_i = get_class(train_data[i][-1])
-        y_j = get_class(train_data[j][-1])
-        if gaussian:
-            diff_vector = train_data[i][:-1] - train_data[j][:-1]
-            kernel = math.exp(-gamma * np.dot(diff_vector.T, diff_vector))
-            P[i][j] = y_i * y_j * kernel
-        else:
-            P[i][j] = y_i * y_j * np.dot(train_data[i][:-1], train_data[j][:-1])
-
 # Get input for the solver
-P = matrix(P)
+X = np.delete(train_data, -1, axis=1)
+if not gaussian:
+    Y = np.diag([get_class(y) for y in train_data[:, -1]])
+    kernel = np.matmul(X, X.T)
+    temp_P = np.matmul(np.matmul(Y, kernel), Y)
+    P = matrix(temp_P)
+else:
+    Y = np.diag([get_class(y) for y in train_data[:, -1]])
+    xtx = np.sum(np.multiply(X, X), 1).reshape(m, 1)
+    kernel_noexp = xtx + xtx.T - 2 * np.dot(X, X.T)
+    kernel = np.power(np.exp(-1*gamma), kernel_noexp)
+    temp_P = np.matmul(np.matmul(Y, kernel), Y)
+    P = matrix(temp_P)
+    
 q = matrix(1.0, (m,1))
 
+G = matrix(np.identity(m))
 G_identity = np.identity(m)
 temp_G = np.concatenate((G_identity, -G_identity), axis=0)
-G = matrix(temp_G, (2*m, m))
-
+G = matrix(temp_G)
+    
+h = matrix(0.0, (m,1))
 h_zero = np.zeros(m)
 h_ones = np.ones(m)
 temp_h = np.append(h_zero, h_ones)
@@ -94,48 +97,77 @@ b = matrix(0.0)
 alphas = qp(P, q, G, h, A, b)['x']
 alphas = np.array(-alphas)[:, 0]
 print (alphas)
+print (len(alphas))
 
 
-# In[90]:
+# In[5]:
 
 
-# Evaluate w and b
-w = np.zeros(28*28)
+# Evaluate w if linear kernel used
+if not gaussian:
+    w = np.zeros(28*28)
+    for i in range(m):
+        sample = train_data[i]
+        w += alphas[i] * get_class(sample[-1]) * sample[:-1]
+    # print (w)
+
+# Evaluate b
+# Find support vectors
+support_vectors = []
+epsilon = 0.0001
 for i in range(m):
-    sample = train_data[i]
-    w += alphas[i] * get_class(sample[-1]) * sample[:-1]
-# print (w)
+    if alphas[i] > epsilon:
+        support_vectors.append(i)
+print (len(support_vectors))
 
-maxone = -9999999
-minone = 9999999
-for sample in train_data[0:m]:
-    y = get_class(sample[-1])
-    if y == 1:
-        minone = min(minone, np.dot(w.T, sample[:-1]))
+alpha_y = np.multiply(alphas, np.array(list(map(get_class, train_data[:, -1]))) )
+
+w_trans_X = np.matmul(kernel, alpha_y)
+maxone = -99999999
+minone = 99999999
+for i in range(m):
+    wtx = w_trans_X[i]
+    y = get_class(train_data[i][-1])
+    if y == -1:
+        maxone = max(maxone, wtx)
     else:
-        maxone = max(maxone, np.dot(w.T, sample[:-1]))
+        minone = min(minone, wtx)
 
 b = -(maxone + minone)/2
-# print (b)
+            
+print (b)
 
 
-# In[92]:
+# In[6]:
 
 
 # Find accuracy
 accuracy = 0
 test_m = len(test_data)
 
-for sample in train_data[0:m]:
-    pred_z = np.dot(w.T, sample[:-1]) + b
-    if pred_z > 0:
-        pred = 1
+for sample in test_data[0:test_m]:
+    if not gaussian:
+        pred_z = np.dot(w.T, sample[:-1]) + b
+        if pred_z > 0:
+            pred = 1
+        else:
+            pred = -1
+        if pred == get_class(sample[-1]):
+            accuracy += 1
     else:
-        pred = -1
-    if pred == get_class(sample[-1]):
-        accuracy += 1
+        xtx = np.sum(np.multiply(sample[:-1], sample[:-1])).reshape(1,1)
+        XtX = np.sum(np.multiply(X, X), 1).reshape(m, 1)
+        inner_product = xtx + XtX.T - 2 * np.dot(sample[:-1], X.T)
+        wtx = np.dot(alpha_y, np.power(np.exp(-gamma), inner_product.T))
+        pred_z = wtx + b
+        if pred_z > 0:
+            pred = 1
+        else:
+            pred = -1
+        if pred == get_class(sample[-1]):
+            accuracy += 1
 
-print (accuracy/m * 100)
+print (accuracy/test_m * 100)
 
 
 # In[ ]:
