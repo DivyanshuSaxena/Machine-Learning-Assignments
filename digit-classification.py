@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[27]:
 
 
 import math
@@ -9,6 +9,7 @@ import random
 import numpy as np
 from cvxopt import matrix
 from cvxopt.solvers import qp
+import svmutil
 
 # Hyperparameters
 gamma = 0.05
@@ -16,7 +17,7 @@ gaussian = True
 digit = 6
 
 
-# In[2]:
+# In[28]:
 
 
 # Get data for PART A
@@ -24,7 +25,7 @@ train_data_raw = np.genfromtxt('./ass2_data/digit_train.csv', delimiter=',')
 test_data_raw = np.genfromtxt('./ass2_data/digit_test.csv', delimiter=',')
 
 
-# In[3]:
+# In[29]:
 
 
 # Process data to get the relevant vectors
@@ -48,7 +49,7 @@ train_data = train_data[1:]
 test_data = test_data[1:]
 
 
-# In[4]:
+# In[ ]:
 
 
 get_class = lambda x : 1 if x == digit else -1
@@ -100,7 +101,7 @@ print (alphas)
 print (len(alphas))
 
 
-# In[5]:
+# In[ ]:
 
 
 # Evaluate w if linear kernel used
@@ -138,7 +139,7 @@ b = -(maxone + minone)/2
 print (b)
 
 
-# In[6]:
+# In[ ]:
 
 
 # Find accuracy
@@ -168,6 +169,27 @@ for sample in test_data[0:test_m]:
             accuracy += 1
 
 print (accuracy/test_m * 100)
+
+
+# In[30]:
+
+
+# Use libsvm
+Y = train_data[:, -1]
+X = np.delete(train_data, -1, axis=1)
+m_linear = svmutil.svm_train(Y, X, "-t 0 -c 1")
+m_gaussian = svmutil.svm_train(Y, X, "-t 2 -c 1 -g 0.05")
+print (m_gaussian.get_nr_sv())
+print (m_linear.get_nr_sv())
+
+
+# In[31]:
+
+
+Y_test = test_data[:, -1]
+X_test = np.delete(test_data, -1, axis=1)
+labels_linear = svmutil.svm_predict(Y_test, X_test, m_linear)
+labels_gaussian = svmutil.svm_predict(Y_test, X_test, m_gaussian)
 
 
 # In[ ]:
