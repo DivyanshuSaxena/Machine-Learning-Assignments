@@ -12,7 +12,7 @@ from cvxopt.solvers import qp
 
 # Hyperparameters
 gamma = 0.05
-gaussian = True
+gaussian = False
 digit = 6
 
 
@@ -126,7 +126,7 @@ b = -(maxone + minone)/2
 accuracy = 0
 test_m = len(test_data)
 
-for sample in test_data[0:test_m]:
+for sample in train_data[0:m]:
     pred_z = np.dot(w.T, sample[:-1]) + b
     if pred_z > 0:
         pred = 1
@@ -135,7 +135,7 @@ for sample in test_data[0:test_m]:
     if pred == get_class(sample[-1]):
         accuracy += 1
 
-print (accuracy/test_m * 100)
+print (accuracy/m * 100)
 
 
 # In[ ]:
