@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[9]:
+# In[1]:
 
 
 import math
@@ -14,10 +14,9 @@ from cvxopt.solvers import qp
 # Hyperparameters
 gamma = 0.05
 gaussian = True
-digit = 6
 
 
-# In[10]:
+# In[2]:
 
 
 # Get data for PART A
@@ -25,7 +24,7 @@ train_data_raw = np.genfromtxt('./ass2_data/digit_train.csv', delimiter=',')
 test_data_raw = np.genfromtxt('./ass2_data/digit_test.csv', delimiter=',')
 
 
-# In[11]:
+# In[3]:
 
 
 # Normalize data and divide into arrays
@@ -130,13 +129,14 @@ def get_parameters(digit1, digit2):
     return alpha_y, w, b
 
 
-# In[6]:
+# In[5]:
 
 
 w = []
 alpha_y = []
 partial_data = []
 X = []
+XtX = []
 Y = []
 b = np.zeros(shape=(10, 10))
 lengths = []
@@ -147,12 +147,14 @@ for i in range(10):
     row_x = []
     row_y = []
     row_lengths = []
+    row_xtx = []
     for j in range(10):
         row_w.append(np.array([]))
         row_alpha.append(np.array([]))
         row_data.append(np.array([]))
         row_x.append(np.array([]))
         row_y.append(np.array([]))
+        row_xtx.append(np.array([]))
         row_lengths.append(0)
     w.append(row_w)
     alpha_y.append(row_alpha)
@@ -160,7 +162,7 @@ for i in range(10):
     X.append(row_x)
     Y.append(row_y)
     lengths.append(row_lengths)
-    
+    XtX.append(row_xtx)
 
 get_class = lambda x, digit : 1 if x == digit else -1
     
@@ -168,25 +170,45 @@ get_class = lambda x, digit : 1 if x == digit else -1
 for digit1 in range(0, 9):
     for digit2 in range(digit1+1, 10):
         partial_data[digit1][digit2] = np.concatenate((train_data[digit1], train_data[digit2]), axis=0)
-        X[digit1][digit2] = np.delete(partial_data[digit1][digit2], -1, axis=1)
+        X[digit1][digit2] = np.delete(partial_data[digit1][digit2], -1, axis=1)                
         Y[digit1][digit2] = np.diag([get_class(y, digit1) for y in partial_data[digit1][digit2][:, -1]])
         lengths[digit1][digit2] = len(partial_data[digit1][digit2])
+        XtX[digit1][digit2] = np.sum(np.multiply(X[digit1][digit2], X[digit1][digit2]), 1).reshape(lengths[digit1][digit2], 1)
 
 
-# In[8]:
+# In[12]:
 
 
 # Obtain the classifiers for each pair of digits
-for digit1 in range(10):
-    for digit2 in range(digit1+1, 10):
-        t = get_parameters(digit1, digit2)
-        alpha_y[digit1][digit2], w[digit1][digit2], b[digit1][digit2] = t[0], t[1], t[2]
-        print ("Done for {0}, {1}".format(digit1, digit2))
-        w[digit2][digit1] = w[digit1][digit2]
-        b[digit2][digit1] = b[digit1][digit2]
+def get_parameters_from_file():
+    try:
+        with open('ass2_data/parameters.txt') as f: 
+            parameters = [x.rstrip() for x in f.readlines()]
+            counter = 0
+            for digit1 in range(9):
+                for digit2 in range(digit1+1, 10):
+                    alpha_y[digit1][digit2] = np.fromstring(parameters[counter], dtype=float, sep=',')
+                    b[digit1][digit2] = float(parameters[counter+1])
+                    counter += 2
+    except FileNotFoundError:
+        for digit1 in range(10):
+            for digit2 in range(digit1+1, 10):
+                t = get_parameters(digit1, digit2)
+                alpha_y[digit1][digit2], w[digit1][digit2], b[digit1][digit2] = t[0], t[1], t[2]
+                print ("Done for {0}, {1}".format(digit1, digit2))
+                w[digit2][digit1] = w[digit1][digit2]
+                b[digit2][digit1] = b[digit1][digit2]
+        # Write into file
+        parameters_text = open('ass2_data/parameters.txt', 'w')
+        for digit1 in range(9):
+            for digit2 in range(digit1+1, 10):
+                alpha_str = ', '.join("{0:.10f}".format(x) for x in alpha_y[digit1][digit2]) # '0,3,5'
+                parameters_text.write(alpha_str)
+                parameters_text.write("\n{0}\n".format(b[digit1][digit2]))
+        parameters_text.close()
 
 
-# In[ ]:
+# In[18]:
 
 
 accuracy = 0
@@ -197,10 +219,14 @@ for i in range(10):
     else:
         collated_test = np.concatenate((collated_test, test_data[i]), axis=0)
 
-test_m = len(test_data[2])
+test_m = len(collated_test)
+confusion_matrix = np.zeros(shape=(10,10))
+counter = 0
 
-for sample in test_data[2][0:test_m]:
+for sample in collated_test[0:1000]:
     counts = [(0,0)] * 10
+    counter += 1
+    xtx = np.sum(np.multiply(sample[:-1], sample[:-1])).reshape(1,1)
     for digit1 in range(0, 9):
         for digit2 in range(digit1+1, 10):
             b_local = b[digit1][digit2]
@@ -208,9 +234,7 @@ for sample in test_data[2][0:test_m]:
                 w_local = w[digit1][digit2]
                 pred_z = np.dot(w_local.T, sample[:-1]) + b_local
             else:
-                xtx = np.sum(np.multiply(sample[:-1], sample[:-1])).reshape(1,1)
-                XtX = np.sum(np.multiply(X[digit1][digit2], X[digit1][digit2]), 1).reshape(lengths[digit1][digit2], 1)
-                inner_product = xtx + XtX.T - 2 * np.dot(sample[:-1], X[digit1][digit2].T)
+                inner_product = xtx + XtX[digit1][digit2].T - 2 * np.dot(sample[:-1], X[digit1][digit2].T)
                 wtx = np.dot(alpha_y[digit1][digit2], np.power(np.exp(-gamma), inner_product.T))
                 pred_z = wtx + b_local
     
@@ -221,24 +245,16 @@ for sample in test_data[2][0:test_m]:
                 counts[digit2] = (counts[digit2][0]+1, counts[digit2][1]-pred_z)
                 # print("Predicting {1} among {0},{1}".format(digit1, digit2))
     index = max(enumerate(counts), key=lambda x: 1000*x[1][0]+x[1][1])[0]
-    
     # print ([x[0] for x in counts], index)
     if index == sample[-1]:
         accuracy += 1
-    # else:
-        # print ([1000*x[0]+x[1] for x in counts], index)
-        # print the figure
-        # array = np.reshape(sample[:-1], (28,28))
-        # threshold = lambda x : 1 if x > 0 else 0
-        # shape = np.vectorize(threshold)(array)
-        # for row in shape:
-        #     for symbol in row:
-        #         if symbol == 0:
-        #             print ('    ', end='')
-        #         else:
-        #             print ('....', end='')
-        #     print ('\n')
-print (accuracy/test_m * 100, accuracy, test_m)
+        
+    # Evaluate confusion matrix for PART C
+    confusion_matrix[index][int(sample[-1])] += 1
+    if counter%100 == 0:
+        print ("Completed {0}% with accuracy {1}".format(counter/100, accuracy/counter))
+print (accuracy/test_m * 100)
+print (confusion_matrix)
 
 
 # In[ ]:
