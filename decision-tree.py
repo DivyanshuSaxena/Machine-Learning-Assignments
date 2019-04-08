@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[137]:
 
 
 import random
 import math
+import copy
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,48 +14,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
 
-# In[2]:
-
-
-def mediate_data(array, median):
-    # median = np.median(array)
-    preprocess = lambda x : 0 if x < median else 1
-    return np.array([preprocess(xi) for xi in array])
-
-def get_values(array):
-    unique_values = np.unique(array)
-    if 7 in unique_values:
-        unique_values = np.array(range(-2, 10))
-    return unique_values
-
-def calculate_entropy(array):
-    entropy = 0
-    for x_tuple in array:
-        x_samples = sum(x_tuple)
-        x_entropy = 0
-        for y_samples in x_tuple:
-            x_entropy += (-y_samples*math.log(y_samples/x_samples))
-        entropy += x_samples*x_entropy
-    return entropy
-
-class Node:
-    children = []
-    attribute = -1
-    sample_indexes = []
-    sample_class = 0
-    is_leaf = 1
-    
-    def __init__(self, index_list):
-        self.sample_indexes = index_list
-        self.children = []
-        self.attribute = -1
-        self.sample_class = 0
-        self.is_leaf = 1
-    
-root = None
-
-
-# In[3]:
+# In[180]:
 
 
 # Preprocess Data
@@ -98,26 +58,72 @@ train_data = np.concatenate((train_category, train_cont_data), axis=1)
 test_data = np.concatenate((test_category, test_cont_data), axis=1)
 val_data = np.concatenate((val_category, val_cont_data), axis=1)
 
+train_data_soph = np.concatenate((train_category, train_continuous), axis=1)
+test_data_soph = np.concatenate((test_category, test_continuous), axis=1)
+val_data_soph = np.concatenate((val_category, val_continuous), axis=1)
+
 attribute_values = {i: get_values(train_data.T[i]) for i in range(len(train_data[0]))}
 
 num_attributes = len(train_data[0])
-print (attribute_values)
 
 
-# In[4]:
+# In[248]:
+
+
+def mediate_data(array, median):
+    # median = np.median(array)
+    preprocess = lambda x : 0 if x < median else 1
+    return np.array([preprocess(xi) for xi in array])
+
+def get_values(array):
+    unique_values = np.unique(array)
+    if 7 in unique_values:
+        unique_values = np.array(range(-2, 10))
+    return unique_values
+
+def calculate_entropy(array):
+    entropy = 0
+    for x_tuple in array:
+        x_samples = sum(x_tuple)
+        x_entropy = 0
+        for y_samples in x_tuple:
+            x_entropy += (-y_samples*math.log(y_samples/x_samples))
+        entropy += x_samples*x_entropy
+    return entropy
+
+class Node:
+    children = []
+    attribute = -1
+    samples = []
+    outputs = []
+    medians = np.array([])
+    sample_class = 0
+    is_leaf = 1
+    
+    def __init__(self, dataset, output):
+        self.samples = np.array(dataset)
+        self.outputs = np.array(output)
+        self.children = []
+        self.medians = np.array([])
+        self.attribute = -1
+        self.sample_class = 0
+        self.is_leaf = 1
+    
+root = None
+sophisticated = False
+
+
+# In[249]:
 
 
 # Part A
 m = len(train_data)
-# m = 5000
-# root = Node(list(range(m)))
+# m = 50
 epsilon = 0.05
 path_attr = []
 max_depth = 24
-num_nodes = [0] * max_depth
 
-def grow_tree(curr, depth):
-    # print ("Starting for node with indexes: {0}".format(curr.sample_indexes)) # Debug
+def grow_tree(curr, depth, soph=False):
     count_y = []
     for X in attribute_values:
         values = attribute_values[X]
@@ -125,17 +131,32 @@ def grow_tree(curr, depth):
         for i in range(len(values)):
             temp_y.append([epsilon, epsilon])
         count_y.append(temp_y)
+        
+    # Preprocess at current node if sophisticated on
+    if soph:
+        curr_continuous = curr.samples[:, list(range(8,23))]
+        curr_category = curr.samples[:, list(range(8))]
+        curr_medians = np.apply_along_axis(np.median, 0, curr_continuous)
+        curr.medians = np.copy(curr_medians)
+        curr_cont_data = np.zeros(len(curr.samples))
+        for i in range(len(curr_continuous.T)):
+            column = curr_continuous.T[i]
+            curr_cont_data = np.column_stack((curr_cont_data, mediate_data(column, curr_medians[i])))
+        curr_cont_data = np.delete(curr_cont_data, 0, 1)
+        curr_train_data = np.concatenate((curr_category, curr_cont_data), axis=1)
+    else:
+        curr_train_data = curr.samples
 
     # Compute y values
     samples0 = samples1 = 0
-    for index in curr.sample_indexes:
-        y = int(train_output[index])
+    for index in range(len(curr.samples)):
+        y = int(curr.outputs[index])
         if y == 0:
             samples0 += 1
         else:
             samples1 += 1
         for feature_index in range(num_attributes):
-            attribute = int(train_data[index][feature_index])
+            attribute = int(curr_train_data[index][feature_index])
             if feature_index in range(2,8):
                 attribute += 2
             count_y[feature_index][attribute][y] += 1
@@ -168,46 +189,53 @@ def grow_tree(curr, depth):
     path_attr.append(best_attribute)
 
     # Make children and append them to the children array
-    children_indexes = []
+    children_dataset = []
+    children_output = []
     for i in attribute_values[best_attribute]:
-        children_indexes.append([])
-    for index in curr.sample_indexes:
-        attribute = int(train_data[index][best_attribute])
+        children_dataset.append([])
+        children_output.append([])
+    for index in range(len(curr.samples)):
+        attribute = int(curr_train_data[index][best_attribute])
         if best_attribute in range(2,8):
             attribute += 2
-        children_indexes[attribute].append(index)
+        children_dataset[attribute].append(curr.samples[index])
+        children_output[attribute].append(curr.outputs[index])
     for x in attribute_values[best_attribute]:
         if best_attribute in range(2,8):
             x += 2
-        child = Node(children_indexes[int(x)])
+        child = Node(children_dataset[int(x)], children_output[int(x)])
         curr.children.append(child)
         
     # Recursively grow tree on the children nodes
     for child in curr.children:
-        if len(child.sample_indexes) > 0:
+        if len(child.samples) > 0:
             curr.is_leaf = 0
-            grow_tree(child, depth+1)
+            grow_tree(child, depth+1, sophisticated)
             
     path_attr.remove(best_attribute)
     # print (path_attr)
     return 0
 
 
-# In[5]:
+# In[250]:
 
 
-root = Node(list(range(m)))
-grow_tree(root, 0)
+num_nodes = [0] * max_depth
+if sophisticated:
+    root = Node(train_data_soph[0:m], train_output[0:m])
+else:
+    root = Node(train_data[0:m], train_output[0:m])
+grow_tree(root, 0, sophisticated)
 
 
-# In[6]:
+# In[251]:
 
 
 for i in range(1, max_depth):
     num_nodes[i] = num_nodes[i] + num_nodes[i-1]
 
 
-# In[7]:
+# In[252]:
 
 
 # Get Accuracy functions
@@ -215,11 +243,23 @@ def get_classification(sample, curr, max_depth, depth):
     # Go to the child based on current best attribute
     if depth == max_depth:
         return curr.sample_class
-    # print ("Starting for node with attribute: {0}, class: {1}, children: {3} and values: {2}"
-    #       .format(curr.attribute, curr.sample_class, attribute_values[curr.attribute], len(curr.children))) # Debug
     if curr.is_leaf == 1:
         return curr.sample_class
-    sample_attribute = sample[curr.attribute]
+    processed_sample = []
+    if sophisticated:
+        for attr_index in range(len(sample)):
+            if attr_index < 8:
+                processed_sample.append(sample[attr_index])
+            else:
+                attribute = sample[attr_index]
+                processed_attr = 0 if attribute < curr.medians[attr_index-8] else 1
+                processed_sample.append(processed_attr)
+        processed_sample = np.array(processed_sample)
+    else:
+        processed_sample = np.copy(sample)
+    # print ("Starting for node with attribute: {0}, class: {1}, children: {3} and values: {2}"
+    #       .format(curr.attribute, curr.sample_class, attribute_values[curr.attribute], len(curr.children))) # Debug
+    sample_attribute = processed_sample[curr.attribute]
     if curr.attribute in range(2,8):
         sample_attribute += 2
     return get_classification(sample, curr.children[int(sample_attribute)], max_depth, depth+1)
@@ -235,7 +275,7 @@ def get_accuracy(dataset, dataset_output, max_depth):
     return (accuracy/len(dataset)*100)
 
 
-# In[8]:
+# In[253]:
 
 
 # Get Training Accuracy
@@ -244,23 +284,34 @@ test_accuracy = []
 val_accuracy = []
 
 for depth in range(1, max_depth+1):
-    train_accuracy.append(get_accuracy(train_data[0:m], train_output[0:m], depth))
-    test_accuracy.append(get_accuracy(test_data, test_output, depth))
-    val_accuracy.append(get_accuracy(val_data, val_output, depth))
+    if not sophisticated:
+        train_accuracy.append(get_accuracy(train_data[0:m], train_output[0:m], depth))
+        test_accuracy.append(get_accuracy(test_data, test_output, depth))
+        val_accuracy.append(get_accuracy(val_data, val_output, depth))
+    else:
+        train_accuracy.append(get_accuracy(train_data_soph[0:m], train_output[0:m], depth))
+        test_accuracy.append(get_accuracy(test_data_soph, test_output, depth))
+        val_accuracy.append(get_accuracy(val_data_soph, val_output, depth))
     
-# print (train_accuracy, test_accuracy, val_accuracy)
+print (train_accuracy)
+print (test_accuracy)
+print (val_accuracy)
 
 # Plot graph for PART A
-plt.plot(num_nodes, train_accuracy, 'b.-', label='Train Accuracy')
-plt.plot(num_nodes, test_accuracy, 'r.-', label='Test Accuracy')
-plt.plot(num_nodes, val_accuracy, 'g.-', label='Validation Accuracy')
+plt.plot(num_nodes, train_accuracy, 'b-', label='Train Accuracy')
+plt.plot(num_nodes, test_accuracy, 'r-', label='Test Accuracy')
+plt.plot(num_nodes, val_accuracy, 'g-', label='Validation Accuracy')
 plt.xlabel('Number of Nodes')
 plt.ylabel('Accuracy')
 plt.legend()
 plt.show()
+if sophisticated:
+    plt.savefig('./ass3_data/dtree_accuracy_c.png')
+else:
+    plt.savefig('./ass3_data/dtree_accuracy_a.png')
 
 
-# In[9]:
+# In[25]:
 
 
 # Use sklearn for PART D
@@ -286,7 +337,7 @@ print ("Test Set Accuracy: {0}".format(min_leaf_tree.score(test_raw[:, list(rang
 print ("Validation Set Accuracy: {0}".format(min_leaf_tree.score(val_raw[:, list(range(1, len(val_raw[0])-1))], val_output)))
 
 
-# In[10]:
+# In[14]:
 
 
 # Get one hot encodings of datasets
@@ -303,7 +354,7 @@ test_onehot_data = np.concatenate((test_onehot_cat, test_continuous), axis=1)
 val_onehot_data = np.concatenate((val_onehot_cat, val_continuous), axis=1)
 
 
-# In[11]:
+# In[15]:
 
 
 # Get accuracies for PART E
@@ -314,7 +365,7 @@ print ("Test Set Accuracy: {0}".format(onehot_tree.score(test_onehot_data, test_
 print ("Validation Set Accuracy: {0}".format(onehot_tree.score(val_onehot_data, val_output)))
 
 
-# In[12]:
+# In[27]:
 
 
 # Get accuracies for PART F
@@ -323,10 +374,4 @@ forest.fit(train_onehot_data, train_output)
 print ("Train Set Accuracy: {0}".format(forest.score(train_onehot_data, train_output)))
 print ("Test Set Accuracy: {0}".format(forest.score(test_onehot_data, test_output)))
 print ("Validation Set Accuracy: {0}".format(forest.score(val_onehot_data, val_output)))
-
-
-# In[ ]:
-
-
-
 
