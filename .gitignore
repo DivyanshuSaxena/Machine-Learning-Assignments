@@ -108,12 +108,16 @@ venv.bak/
 *.csv
 *.dat
 *.pdf
+
 .vscode/
+
 demo/
 a1_figures/
 ass1_data/
 ass2_data/
 ass3_data/
+ass4_data/
+
 submissions/
 2016CS10316_Divyanshu_Saxena*/
 check*
