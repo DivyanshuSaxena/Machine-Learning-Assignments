@@ -36,7 +36,7 @@ def view_image(oned_arr):
 total_episodes = 0
 total_frames = 0
 num_frames50 = 0
-make_pickle = 0
+make_pickle = int(sys.argv[1].rstrip())
 
 
 # In[9]:
@@ -68,7 +68,7 @@ if make_pickle == 1:
     print ("PCA images done: {0}".format(pca_images.shape))
     ipca = IncrementalPCA(n_components=50, batch_size=200)
     ipca.fit(pca_images)
-    with open('pca_model.pickle', 'wb') as handle:
+    with open('./models/pca_model.pickle', 'wb') as handle:
         pickle.dump(ipca, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -76,11 +76,11 @@ if make_pickle == 1:
 
 
 if not make_pickle == 1:
-    with open('./pca_model.pickle', 'rb') as handle:
+    with open('./models/pca_model.pickle', 'rb') as handle:
         model = pickle.load(handle)
 
     transformed_images = []
-    for root, sub_folders, files in tree[0:2]:
+    for root, sub_folders, files in tree:
         print (root)
         episode_images = []
         if len(files) != 0:
@@ -95,8 +95,10 @@ if not make_pickle == 1:
             transform_file = './transforms/{0}'.format(root[16:])
             np.save(transform_file, transformed_episode)
 
-    transformed_images = np.array(transformed_images)
+            check_transform = np.load("{0}.npy".format(transform_file))
 
+    transformed_images = np.array(transformed_images)
+    np.save('./transformed', transformed_images)
 
 # In[ ]:
 
